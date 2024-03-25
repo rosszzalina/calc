@@ -1,0 +1,193 @@
+#include <bits/stdc++.h>
+using namespace std;
+// Define a struct to represent a calculation entry
+struct Calculation {
+    string expression;
+    double result;
+};
+// Define a vector to store the history of calculations
+vector<Calculation> history;
+// Function to calculate an expression
+double calculateExpression(const string &expression)//this function is responsible for the result
+{
+    istringstream iss(expression);
+    stack<char> operators;
+    stack<double> operands;
+    char op;
+    // Save the expression to history
+    history.push_back({expression, 0.0});//saves the current expression to the "history" vector
+    while (iss >> op) {
+      if (op == '(') {
+            operators.push(op);
+        }
+        else if (isdigit(op) || op == '-' && isdigit(iss.peek()))
+        {//This block of code ensures that the numbers are read correctly from the expression string
+            iss.putback(op);
+            double operand;
+            iss >> operand;
+            operands.push(operand);
+        } 
+        else if (op == ')') {
+            //checks if current operator is ")"
+            while (!operators.empty() && operators.top() != '(') {
+                //reads symbols untill sees "("
+                char op = operators.top();
+                operators.pop();
+                double operand2 = operands.top();
+                operands.pop();
+                double operand1 = operands.top();
+                operands.pop();
+                //после обработки  стека операторов, мы удаляем его из стека
+                if (op == '+') {
+                    operands.push(operand1 + operand2);
+                } 
+                else if (op == '-') {
+                    operands.push(operand1 - operand2);
+                } 
+                else if (op == '*') {
+                    operands.push(operand1 * operand2);
+                } 
+                else if (op == '/') {
+                    if (operand2 == 0) {
+                        throw runtime_error("Error!");
+                    }
+                    operands.push(operand1 / operand2);
+                }
+            }
+            operators.pop(); // discard the '('
+        } 
+        //checks if the current symbol is an operator or a function
+        else if (op == '+' || op == '-' || op == '*' || op == '/' || op == 's' || op == 'p' || op == 'a' || op == 'r') {
+            //adds to operator stacks as functions
+            if (op == 's') { // Square root function
+                operators.push(op);
+            } 
+            else if (op == 'p') { // Power function
+                operators.push(op);
+            } 
+            else if (op == 'a') { // Absolute value function
+                operators.push(op);
+            } 
+            else if (op == 'r') { // Round function
+                operators.push(op);
+            } 
+            else {
+                //main operations
+                while (!operators.empty() && operators.top() != '(' && ((op == '*' || op == '/') && (operators.top() == '*' || operators.top() == '/'))) {
+                  //checks if operator and symbol is still "*" and "/"
+                    char prev_op = operators.top();
+                    operators.pop();
+                    double operand2 = operands.top();
+                    operands.pop();
+                    double operand1 = operands.top();
+                    operands.pop();
+                    if (prev_op == '*') {
+                        operands.push(operand1 * operand2);
+                    } 
+                    else if (prev_op == '/') {
+                        if (operand2 == 0) {
+                            throw runtime_error("Error!");
+                        }
+                        operands.push(operand1 / operand2);
+                    }
+                }
+                operators.push(op); //aves for nezt operations
+            }
+        }
+    }
+    while (!operators.empty()) {
+        char op = operators.top();
+        operators.pop();
+        if (op == 's') { // sqrt function
+            double operand = operands.top();
+            operands.pop();
+            if (operand < 0) {
+                throw invalid_argument("Can't take sqrt out of a negative number!");
+            }
+            operands.push(sqrt(operand));
+        } 
+        else if (op == 'p') { // power function
+            double exponent = operands.top();
+            operands.pop();
+            double base = operands.top();
+            operands.pop();
+            operands.push(pow(base, exponent));
+        } 
+        else if (op == 'a') { // absolute value function
+            double operand = operands.top();
+            operands.pop();
+            operands.push(abs(operand));
+        } 
+        else if (op == 'r') { // round function
+            double operand = operands.top();
+            operands.pop();
+            operands.push(round(operand));
+        } 
+        else {
+            double operand2 = operands.top();
+            operands.pop();
+            double operand1 = operands.top();
+            operands.pop();
+            if (op == '+') {
+                operands.push(operand1 + operand2);
+            } 
+            else if (op == '-') {
+                operands.push(operand2 - operand1); //isn't working?????
+            } 
+            else if (op == '*') {
+                operands.push(operand1 * operand2);
+            } 
+            else if (op == '/') {
+                if (operand2 == 0) {
+                    throw runtime_error("Error!");
+                }
+                operands.push(operand1 / operand2);
+            }
+        }
+    }
+    return operands.top();
+    // save the result to the last entry in history
+    history.back().result = operands.top();//update result in history
+    return operands.top();
+    
+}
+// function to run the program
+void runProgram() {
+    string userInput;
+    cout << "Enter an arithmetic expression : ";
+    getline(cin, userInput);
+    try {
+        double result = calculateExpression(userInput);
+        cout << "Result: " << result << endl;
+    } 
+    // if there is a wrong expression, it catches the exception and prints an error message
+    catch (const exception &ex) {
+        cerr << "Error: " << ex.what() << endl;
+    }
+}
+// function to show the history of calculation
+void displayHistory() {
+    cout << "Calculation history:" << endl;
+    for (const auto &calculation : history) {
+        cout << "Expression: " << calculation.expression << " Result: " <<calculation.result << endl;
+    }
+}
+int main() {
+    char word = 'y';
+    while (word == 'y') {
+        runProgram();
+        cout << "Do you want to continue? (y/n):";
+        cin >> word;
+        cin.ignore(); // ignores "cin" to runProgram
+        if (word == 'n') {
+            cout << "Thank you for using the Calculator!" << endl;
+        } 
+        else if (word == 'h') {
+            displayHistory();
+        }
+    }
+    return 0;
+}
+/*не выводит резалт в истории действий
+не работает минус
+*/
